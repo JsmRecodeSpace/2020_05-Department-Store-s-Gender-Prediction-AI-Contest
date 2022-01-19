@@ -1,0 +1,67 @@
+공통적으로 10개의 다른 시드로 각각 앙상블 효과를 보았음.
+
+#DNN with Numeric Features(F1,F2,F4)
+Feature1과 Feature2는 0. Raw_feature_generation.ipynb으로 생성한 피쳐로
+Feature1은 mean 인코딩을 하였고 Feature2는 label 인코딩을 함
+
+- Feature1, 2, 4
+
+직전 제출의 튜닝을 기반으로 전체적으로 조금씩 수정하여 피쳐에 최적화된 모델 생성
+
+F1 : Dense 층과 Dropout 층들을 기반으로 Optimizer adam 선택, 최초 은닉층에만 l2 규제항 추가
+가중치 초기화 방법으로 he_normal 선택, batch_size = 64 
+
+F2,F4는 같은 관점의 피쳐이기에 다양한 튜닝을 시도 했으나 F1의 모델과 같은 구조가
+제일 좋은 성능을 보임
+
+#DNN with W2V Features(F5,F6)
+
+같은 관점의 피쳐이기에 함께 모델링도 시도해보았지만 오히려 성능이 떨어짐
+F5 피쳐가 월등히 좋은 성적을 보여서 F6피쳐는 탈락시킴
+F5 : 여러 시도들을 해보았지만 결론적으로
+단순 DNN 모델링에서는 층이 복잡해질수록 성능이 저하된다는 결괄르 얻음.
+적절하게 로스가 감소하는 방향으로 학습되는 노드 수를 탐색 (첫번쨰 Dense : 128개)
+출력층 직전에 BatchNormalization 층 통한 정규화, Optimizer로 Adagrad 선택
+batch_size = 64
+
+#DAE&DNN with BOW Feature(F3)
+ One-Hot + DAE with DropOut
+ - Try 1: Dropout rate값들 조정해보며 비교
+ - Try 2: Encoder, Decoder를 두번 진행해보는 시도를 해봄 -> 성능이 많이 떨어짐. 기각.
+ - Try 3: Enocder layer와 Decoder layer 사이에 Noise 추가 -> 성능이 떨어짐. 기각.
+ - Try 4: Encoder Layer에도 Noise를 삽입하는 시도를 해봄
+	-> 성능이 개선되어 총 2개의 Noise를 추가. 채택.
+
+ One-Hot + DAE with GaussianNoise
+ - Try 1: GaussianNoise의 stddev값 조정(0.01, 0.2, 0.2, 0.3) 및 비교
+ - Try 2: Encoder, Decoder Layer 두 번 반복 -> 성능이 많이 떨어짐. 기각.
+ - Try 3: 가장 성적이 좋은 stddev=0.2를 기준으로 Dropout과 결합한 Modeling 시도(But. 오히려 성적이 떨어짐). 기각.
+
+ 이외에도 GaussianDropout, AlphaDropout을 사용한 DAE 시도
+ - Try 1: One-Hot + DAE with GaussianDropout
+ - Try2: One-Hot + DAE with AlphaDropout
+
+ Try: < Feature 추가 >
+
+ - 'goods_nm'과 'tran_date'를 Feature로 추가
+	-> 결과적으로 성능이 개선되는 'goods_nm'만 추가하기로 결정
+ - 위의 과정 그대로 진행
+ 1. Dropout, GaussianNoise의 rate값, stddev값 조정하면서 비교
+
+ 2. 성적이 좋은 rate값, stddev값에 한해 Encoder Layer에 Dropout Noise 삽입
+
+
+( 최종적으로 가장 성적이 우수했던
+'Feature 추가 + GaussianNoise stddev값(0.01) 고정 + Encoder layer Dropout 1개 -> mean=0.77234, std=0.017'
+채택 )
+
+#CNN Model(ConV1d)
+64차원으로 임베딩 후
+32개의 필터로 kernel 7개씩 할당
+MaxPooling -> window=5
+2번의 ConV1d 레이어 연산 후
+Dense(8)층과 연결하여 출력하였다.
+이 또한 모델의 층이 복잡하면 복잡할수록 성능이 떨어졌음.
+
+
+
